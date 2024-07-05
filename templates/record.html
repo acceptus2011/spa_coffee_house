@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block style %}
+<link rel="stylesheet" href="{% static 'css/index.css' %}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+{% endblock %}
+
+{% block header %}
+    <li class="Main_Header_navigation_item">
+        <a href="{% url 'blog_news' %}">Новини i блог</a>
+    </li>
+    <li class="Main_Header_navigation_item">
+        <a href="{% url 'gallery' %}">Фотогалерея</a>
+    </li>
+    <li class="Main_Header_navigation_item">
+        <a href="{% url 'cafe' %}">Кав’ярня</a>
+    </li>
+{% endblock %}
+
+{% block content %}
+<div class="Record_main_list">
+    {% if step == '1' %}
+    <form method="post" action="{% url 'create_record' %}" class="Record_procedur_form">
+        {% csrf_token %}
+        <div id="category-buttons" class="category_button_list">
+            {% for category in spa_categories %}
+                <button type="button" class="category-button" data-category-id="{{ category.id }}">{{ category.name }}</button>
+            {% endfor %}
+        </div>
+        <ul id="procedure-list" class="procedure_list">
+            {% for procedure in procedures %}
+                <li class="procedure-item" data-category-id="{{ procedure.type_category.categories.id }}">
+                    <ul class="procedure-item-list">
+                        <li class="procedure-item-info">
+                            <span class="type_category">{{ procedure.type_category.name }}</span>
+                            <span class="get_duration_display">{{ procedure.get_duration_display }} хв</span>
+                            <span class="price">{{ procedure.price|floatformat:0 }} грн</span>
+                        </li>
+                        <li class="procedure-item-label">
+                            <input type="checkbox" name="procedure" value="{{ procedure.id }}" class="procedure-checkbox">
+                        </li>
+                    </ul>
+                </li>
+            {% endfor %}
+        </ul>
+        <input type="hidden" name="step" value="1">
+        <input type="hidden" id="selected-procedure" name="procedure">
+        <button type="submit" class="submit-procedure-button">Вибрати процедуру</button>
+    </form>
+    <script src="{% static 'js/record/record_procedure_filter.js' %}"></script>
+    {% elif step == '2' %}
+    <form method="post" action="{% url 'create_record' %}" class="Record_therapist_form">
+    {% csrf_token %}
+    <ul class="therapist-list" id="therapist-list">
+        {% for therapist_data in therapists %}
+        <li class="therapist-item">
+            <ul class="therapist-item_list">
+                <li class="therapist-item_image">
+                    {% if therapist_data.therapist.user.profile_image %}
+                        <img src="{{ therapist_data.therapist.user.profile_image.url }}" alt="" class="Massage_Therapist_img">
+                    {% else %}
+                        <img src="{% static 'icon/logo.svg' %}" alt="">
+                    {% endif %}
+                </li>
+                <li class="therapist-item_info">
+                    <ul class="therapist-item_list">
+                        <li class="therapist-item_info_user_name">
+                            <span>{{ therapist_data.therapist.user.first_name }} {{ therapist_data.therapist.user.last_name }}</span>
+                        </li>
+                        <li class="therapist-position">
+                            <ul class="therapist-position_list">
+                                {% for position in therapist_data.therapist.position.all %}
+                                <li class="therapist-position-item">
+                                    <span>
+                                        {{ position.name }}
+                                    </span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </li>
+                        <li class="therapist-rating">
+                            <ul class="rating_list">
+                                <li class="rating" data-rating="{{ therapist_data.therapist.average_rating }}"></li>
+                                <li class="average_rating">
+                                    <span>
+                                        {{ therapist_data.therapist.average_rating }}
+                                    </span>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="therapist-available-slots">
+                            <ul class="therapist-available-slots_list">
+                                {% if therapist_data.nearest_slots %}
+                                    {% for slot in therapist_data.nearest_slots %}
+                                    {% if forloop.first or therapist_data.nearest_slots|length == 0 %}
+                                    <li class="slot_datetime"> <span>Найближчі вільні часи: </span><span>{{ slot.date }}</span>
+                                        <ul class="slot_time_list">
+                                            {% endif %}
+                                            <li class="slot_time_item">{{ slot.time }}</li>
+                                            {% if forloop.last %}
+                                        </ul>
+                                    </li>
+                                    {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+            <div class="therapist-item-label">
+                <input type="checkbox" name="therapist" value="{{ therapist_data.therapist.id }}" class="therapist-checkbox">
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    <input type="hidden" name="step" value="2">
+    <input type="hidden" id="selected-therapist" name="therapist">
+    <button type="submit" class="submit-therapist-button">Вибрати спеціалиста</button>
+    </form>
+    <script src="{% static 'js/therapist/add_stars.js' %}"></script>
+    <script src="{% static 'js/record/record_therapist_filter.js' %}"></script>
+    {% elif step == '3' %}
+    <div class="Record_datetime_container">
+        <div>
+            <input type="text" id="date-picker" placeholder="Выберите дату" style="display: none;">
+        </div>
+        <div id="available-slots" style="display: none;" class="available-slots">
+            <div id="slots-container" class="slots-container"></div>
+        </div>
+        <form method="post" action="{% url 'create_record' %}" class="Record_datetime_form">
+            {% csrf_token %}
+            <input type="hidden" name="step" value="3">
+            <input type="hidden" id="selected-date" name="date">
+            <input type="hidden" id="selected-time" name="time">
+            <button type="submit" class="submit-datetime-button">Вибрати час</button>
+            {% if error_message %}
+            <div class="error-message">{{ error_message }}</div>
+            {% endif %}
+        </form>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const availableSlots = {{ available_slots|safe }};
+            const datepicker = flatpickr("#date-picker", {
+                locale: "uk",
+                dateFormat: "Y-m-d",
+                inline: true,
+                enable: Object.keys(availableSlots),
+                onChange: function(selectedDates, dateStr, instance) {
+                    const slotsContainer = document.getElementById('slots-container');
+                    slotsContainer.innerHTML = '';
+                    if (availableSlots[dateStr]) {
+                        document.getElementById('available-slots').style.display = 'flex';
+                        availableSlots[dateStr].forEach(slot => {
+                            const slotElement = document.createElement('span');
+                            slotElement.className = 'time-slot';
+                            slotElement.textContent = slot;
+                            slotElement.dataset.date = dateStr;
+                            slotElement.dataset.time = slot;
+                            slotsContainer.appendChild(slotElement);
+                        });
+                    } else {
+                        document.getElementById('available-slots').style.display = 'none';
+                    }
+                }
+            });
+
+            document.getElementById('slots-container').addEventListener('click', function(event) {
+                const target = event.target.closest('.time-slot');
+                if (target) {
+                    const date = target.getAttribute('data-date');
+                    const time = target.getAttribute('data-time');
+
+                    document.getElementById('selected-date').value = date;
+                    document.getElementById('selected-time').value = time;
+
+                    // Удаляем класс "selected" у всех элементов
+                    const slots = document.querySelectorAll('.time-slot');
+                    slots.forEach(slot => slot.classList.remove('selected'));
+
+                    // Добавляем класс "selected" к текущему элементу
+                    target.classList.add('selected');
+                }
+            });
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/uk.js"></script>
+    {% endif %}
+</div>
+{% endblock %}

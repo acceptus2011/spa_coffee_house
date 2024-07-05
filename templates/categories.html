@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block style %}
+<link rel="stylesheet" href="{% static 'css/index.css' %}">
+{% endblock %}
+
+
+{% block header %}
+        {% for item in another_model_list %}
+            {% if category_pk == item.pk %}
+                    <li class="Main_Header_navigation_item Active">
+                        <a href="{% url 'categories' item.id %}">{{item.name}}</a>
+                    </li>
+                {%else%}
+                    <li class="Main_Header_navigation_item">
+                        <a href="{% url 'categories' item.id %}">{{item.name}}</a>
+                    </li>
+                {%endif%}
+
+        {%endfor%}
+{% endblock %}
+
+{% block content %}
+<div class="TypeCategories_main_list">
+    <ul class="TypeCategories_list">
+        {% for data in type_categories_data %}
+            <li class="TypeCategory_item">
+                <ul class="TypeCategory_item_list">
+                    <li class="item_image">
+                        {% if data.type_category.type_categories_image %}
+                            <img src="{{ data.type_category.type_categories_image.url }}" alt="" class="TypeCategory_img">
+                        {% else %}
+                            <img src="{% static 'icon/logo.svg' %}" alt="">
+                        {% endif %}
+                    </li>
+                    <li class="item_header">
+                        <h2>{{ data.type_category.name }}</h2>
+                    </li>
+                    <li class="item_description">
+                        <span>{{ data.type_category.description }}</span>
+                    </li>
+                    <li class="item_price_duration">
+                        <ul class="item_price_duration_list">
+                            <li class="item_info">
+                                <span>Тривалість: {{ data.durations }} хв</span>
+                            </li>
+                            <li class="item_info">
+                                <span>Цiна: {{ data.prices }} грн</span>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+        {% endfor %}
+    </ul>
+    <a href="{% url 'create_record' %}" class="TypeCategory_Link_Sign_Up">Записатись</a>
+</div>
+{% endblock %}
